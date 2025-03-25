@@ -1,10 +1,10 @@
 cspc_lidar:
   ros__parameters:
-    port: /dev/sc_mini
-    frame_id: laser_link
+    port: /dev/ttyUSB0
+    frame_id: laser_frame
     ignore_array: ""
     baudrate: 230400
-    samp_rate: 9
+    samp_rate: 10
     resolution_fixed: true
     singleChannel: false
     auto_reconnect: true
