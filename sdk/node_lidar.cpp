@@ -78,7 +78,7 @@ bool lidar_state_judgment()
 		wait_speed_right = false;
 		lidar_start_flag = false;
 
-		lidar_status_time = current_times();
+		lidar_status_time = getTime();
 		flushSerial();
 	}
 	if(node_lidar.lidar_status.lidar_trap_restart)
@@ -92,13 +92,13 @@ bool lidar_state_judgment()
 		lidar_flush = false;
 		lidar_start_flag = false;
 
-		lidar_status_time = current_times();
+		lidar_status_time = getTime();
 		node_lidar.serial_port->write_data(end_lidar,4);
 	}
 	if(node_lidar.lidar_status.lidar_ready && !wait_speed_right)
 	{
 		
-		if(current_times() - lidar_status_time > 1000 && !lidar_flush)
+		if(getTime() - lidar_status_time > 1000 && !lidar_flush)
 		{
 			switch (node_lidar.lidar_general_info.version)
 			{
@@ -124,8 +124,8 @@ bool lidar_state_judgment()
 					break;
 			}
 		}
-		node_lidar.lidar_time.lidar_frequence_abnormal_time = current_times();
-		node_lidar.lidar_time.system_start_time = current_times();
+		node_lidar.lidar_time.lidar_frequence_abnormal_time = getTime();
+		node_lidar.lidar_time.system_start_time = getTime();
 	}
 	return wait_speed_right;
 }
@@ -143,7 +143,7 @@ int read_forever()
 	
 	memset(local_scan, 0, sizeof(local_scan));
 
-	node_lidar.lidar_time.scan_time_record = current_times();
+	node_lidar.lidar_time.scan_time_record = getTime();
 
 	while (1)
 	{
@@ -154,7 +154,7 @@ int read_forever()
 			ans = node_lidar.lidar_data_processing.waitScanData(local_buf, count);
 			if(!IS_OK(ans))
 			{
-				if(current_times()-node_lidar.lidar_time.system_start_time > 3000 )
+				if(getTime()-node_lidar.lidar_time.system_start_time > 3000 )
 				{
 					if(!node_lidar.lidar_status.lidar_restart_try)
 					{
@@ -169,7 +169,7 @@ int read_forever()
 				}	
 			}else{
 				node_lidar.lidar_status.lidar_restart_try = false;
-				node_lidar.lidar_time.system_start_time = current_times();
+				node_lidar.lidar_time.system_start_time = getTime();
 			}
 			for (size_t pos = 0; pos < count; ++pos)
 			{
@@ -185,19 +185,19 @@ int read_forever()
 						{
 							if(local_scan[0].scan_frequence > 200 || local_scan[0].scan_frequence < 10)
 							{
-								if(current_times()-node_lidar.lidar_time.lidar_frequence_abnormal_time > 30000)
+								if(getTime()-node_lidar.lidar_time.lidar_frequence_abnormal_time > 30000)
 								{
 									node_lidar.lidar_status.lidar_abnormal_state |= 0x02;
 								}
 							}else{
-								node_lidar.lidar_time.lidar_frequence_abnormal_time = current_times();
+								node_lidar.lidar_time.lidar_frequence_abnormal_time = getTime();
 							}
 						}
 						
 						node_lidar._lock.lock();
 						if((node_lidar.lidar_time.scan_time_current - node_lidar.lidar_time.scan_time_record) > 2000)
 						{
-							printf("full----- count=%d,time=%lld\n",scan_count,current_times());
+							printf("full----- count=%d,time=%lld\n",scan_count,getTime());
 							node_lidar.lidar_time.scan_time_record = node_lidar.lidar_time.scan_time_current;
 						}
 						node_lidar.lidar_time.scan_start_time = node_lidar.lidar_time.tim_scan_start;
@@ -209,7 +209,7 @@ int read_forever()
 
 						memcpy(node_lidar.scan_node_buf, local_scan, scan_count * sizeof(node_info));
 						node_lidar.scan_node_count = scan_count;
-						node_lidar.lidar_time.scan_time_current = current_times();
+						node_lidar.lidar_time.scan_time_current = getTime();
 						node_lidar._dataEvent.set();
 						node_lidar._lock.unlock();
 					}
@@ -292,10 +292,12 @@ void send_lidar_data(LaserScan &outscan)
 		outscan.config.max_range = 10.0; //测量的最远距离是10m
 		outscan.config.scan_time =  static_cast<float>(scan_time * 1.0 / 1e9);
     	outscan.config.time_increment = outscan.config.scan_time / (double)(count - 1);
-		outscan.stamp = node_lidar.lidar_time.scan_start_time;
+		outscan.stamp = getTime();
+		//outscan.stamp = node_lidar.lidar_time.scan_start_time;
 		//std::cout << "scantime:" << outscan.config.scan_time << "stamp:" << outscan.stamp << std::endl;
 		//scan_msg->header.frame_id = node_lidar.lidar_general_info.frame_id;
 		//scan_msg->header.stamp = ros::Time::now();
+		//outscan.stamp = rclcpp::Time::nanoseconds();
 
 		if(node_lidar.lidar_status.isConnected)
 		{
