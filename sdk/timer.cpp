@@ -25,16 +25,16 @@ int gettimeofday_t(struct timeval *tv, void * /*tzv*/)
 
 uint64_t getTime()
 {
-#if HAS_CLOCK_GETTIME
+// #if HAS_CLOCK_GETTIME
     struct timespec tim;
     clock_gettime(CLOCK_REALTIME, &tim);
     return static_cast<uint64_t>(tim.tv_sec) * 1000000000LL + tim.tv_nsec;
-#else
-    struct timeval timeofday;
-    gettimeofday_t(&timeofday, NULL);
-    return static_cast<uint64_t>(timeofday.tv_sec) * 1000000000LL +
-           static_cast<uint64_t>(timeofday.tv_usec) * 1000LL;
-#endif
+// #else
+//     struct timeval timeofday;
+//     gettimeofday_t(&timeofday, NULL);
+//     return static_cast<uint64_t>(timeofday.tv_sec) * 1000000000LL +
+//            static_cast<uint64_t>(timeofday.tv_usec) * 1000LL;
+// #endif
 }
 
 void delay(uint32_t ms) {
