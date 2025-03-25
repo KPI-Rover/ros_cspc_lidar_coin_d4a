@@ -11,7 +11,7 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 # Add architecture flags
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=x86-64 -mtune=generic -O0 -g")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -mtune=generic -O0 -g")
 set(CMAKE_BUILD_TYPE Debug)
 
 find_package(ament_cmake REQUIRED)
