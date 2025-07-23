@@ -17,6 +17,14 @@ def generate_launch_description():
     parameter_file = LaunchConfiguration('params_file')
     node_name = 'cspc_lidar'
 
+    log_level = LaunchConfiguration('log_level', default='info')
+
+    log_level_arg = DeclareLaunchArgument(
+        'log_level',
+        default_value='info',
+        description='Logging level (e.g., debug, info, warn, error, fatal)'
+    )
+
     params_declare = DeclareLaunchArgument('params_file',
                                            default_value=os.path.join(
                                                share_dir, 'params', 'cspc_lidar.yaml'),
@@ -28,11 +36,13 @@ def generate_launch_description():
                                 output='screen',
                                 emulate_tty=True,
                                 parameters=[parameter_file],
+                                arguments=['--ros-args', '--log-level', log_level],
                                 namespace='/',
                                 )
 
 
     return LaunchDescription([
+        log_level_arg,
         params_declare,
         driver_node,
     ])
