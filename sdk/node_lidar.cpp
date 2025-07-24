@@ -13,11 +13,12 @@
 #include "mtime.h"
 #include "calibration.h"
 
+#include "rclcpp/logging.hpp"
 
 using namespace std;
 
 node_lidar_t node_lidar;
-
+static constexpr const char* LOGGER_NAME = "node_lidar";
 
 node_lidar_t::~node_lidar_t(){
   	if(scan_node_buf)
@@ -30,7 +31,7 @@ node_lidar_t::~node_lidar_t(){
 		delete[] globalRecvBuffer;
 		globalRecvBuffer = NULL;
 	}
-	printf("关闭雷达");
+	RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME), "Turn off lidar");
 	node_lidar.serial_port->close();
 	node_lidar.lidar_status.lidar_ready = false;
 	node_lidar.lidar_status.close_lidar = true;
@@ -69,7 +70,7 @@ bool lidar_state_judgment()
 
 	if(node_lidar.lidar_status.lidar_ready != node_lidar.lidar_status.lidar_last_status || node_lidar.lidar_status.close_lidar)
 	{
-		printf("状态切换\n");
+		RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME), "Switch state");
 
 		node_lidar.lidar_status.close_lidar = false;
 		node_lidar.lidar_status.lidar_last_status = node_lidar.lidar_status.lidar_ready;
@@ -83,7 +84,7 @@ bool lidar_state_judgment()
 	}
 	if(node_lidar.lidar_status.lidar_trap_restart)
 	{
-		printf("状态异常重新启动 %lld\n",lidar_status_time);
+		RCLCPP_WARN(rclcpp::get_logger(LOGGER_NAME), "Restart due to abnormal status %lld",lidar_status_time);
 		
 		node_lidar.lidar_status.lidar_trap_restart = false;
 
@@ -103,19 +104,19 @@ bool lidar_state_judgment()
 			switch (node_lidar.lidar_general_info.version)
 			{
 				case M1C1_Mini_v1:
-					printf("V1版本启动雷达\n");
+					RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME), "V1 version launch lidar");
 					node_lidar.serial_port->write_data(start_lidar,4);
 					wait_speed_right = true;
 					break;
 				
 				case M1C1_Mini_v2:
-					printf("V2 X2版本启动雷达\n");
+					RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME), "V2 X2 version launch lidar");
 					node_lidar.serial_port->write_data(start_lidar,4);
 					wait_speed_right = true;
 					break;
 				
 				case M1CT_TOF:
-					printf("TOF雷达启动\n");
+					RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME), "TOF lidar activated");
 					node_lidar.serial_port->write_data(start_lidar,4);
 					wait_speed_right = true;
 					break;
@@ -158,11 +159,11 @@ int read_forever()
 				{
 					if(!node_lidar.lidar_status.lidar_restart_try)
 					{
-						printf("尝试重启雷达\n");
+						RCLCPP_WARN(rclcpp::get_logger(LOGGER_NAME), "Try restarting the lidar");
 						node_lidar.lidar_status.lidar_restart_try = true;
 						node_lidar.lidar_status.lidar_trap_restart = true;
 					}else{
-						printf("@@@雷达被卡住\n");
+						RCLCPP_ERROR(rclcpp::get_logger(LOGGER_NAME), "The lidar is stuck");
 						node_lidar.lidar_status.lidar_abnormal_state |= 0x01;
 						usleep(100);
 					}
@@ -197,7 +198,7 @@ int read_forever()
 						node_lidar._lock.lock();
 						if((node_lidar.lidar_time.scan_time_current - node_lidar.lidar_time.scan_time_record) > 2000)
 						{
-							printf("full----- count=%d,time=%lld\n",scan_count,getTime());
+							RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME), "full----- count=%d,time=%lld",scan_count,getTime());
 							node_lidar.lidar_time.scan_time_record = node_lidar.lidar_time.scan_time_current;
 						}
 						node_lidar.lidar_time.scan_start_time = node_lidar.lidar_time.tim_scan_start;
@@ -406,26 +407,26 @@ bool initialize()
 	switch (node_lidar.lidar_general_info.version)
 	{
 	case M1C1_Mini_v1:
-		printf("version M1C1_Mini_v1\n");
+		RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME), "version M1C1_Mini_v1");
 		node_lidar.lidar_general_info.m_SerialBaudrate = 115200;
 		node_lidar.lidar_data_processing.PackageSampleBytes = 2;
 		break;
 
 	case M1C1_Mini_v2:
-		printf("version M1C1_Mini_v2\n");
+		RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME), "version M1C1_Mini_v2");
 		node_lidar.lidar_general_info.m_SerialBaudrate = 150000;
 		node_lidar.lidar_data_processing.PackageSampleBytes = 3;
 		node_lidar.lidar_general_info.m_intensities = true;
 		break;
 
 	case M1CT_Coin_Plus:
-		printf("version M1CT_Coin_Plus\n");
+		RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME), "version M1CT_Coin_Plus");
 		node_lidar.lidar_general_info.m_SerialBaudrate = 115200;
 		node_lidar.lidar_data_processing.PackageSampleBytes = 3;
 		break;
 	
 	case M1CT_TOF:
-		printf("version M1CT_TOF\n");
+		RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME), "version M1CT_TOF");
 		node_lidar.lidar_general_info.m_SerialBaudrate = 230400;
 		node_lidar.lidar_data_processing.PackageSampleBytes = 3;
 		node_lidar.lidar_general_info.m_intensities = true;
@@ -437,7 +438,7 @@ bool initialize()
 
 	//设置通信串口
 	if(!lidar_set_port()){
-		printf("lidar_set_port wrong\n");
+		RCLCPP_FATAL(rclcpp::get_logger(LOGGER_NAME), "lidar_set_port wrong");
 		return false;
 	}
 
@@ -457,7 +458,7 @@ int node_start()
 	bool ret_init = initialize();
 
 	if(!ret_init){
-		printf("node_lidar init error\n");
+		RCLCPP_FATAL(rclcpp::get_logger(LOGGER_NAME), "node_lidar init error");
 		return -1;
 	}
 	/*读取激光雷达数据的线程*/
